@@ -6,12 +6,15 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 import datetime
+import os
 import models
 
 pdfmetrics.registerFont(TTFont('DejaVuSerif', 'DejaVuSerif.ttf'))
+pdfmetrics.registerFont(TTFont('DejaVuSerif-Bold', 'DejaVuSerif-Bold.ttf'))
 
+OUTPUT_FOLDER = 'result/'
 OUTPUT_NAME = datetime.datetime.now().strftime("%d-%m-%Y %H:%M")
-OUTPUT_PATH = 'result/' + OUTPUT_NAME + '.pdf'
+OUTPUT_PATH = OUTPUT_FOLDER + OUTPUT_NAME + '.pdf'
 
 
 class Document:
@@ -48,13 +51,13 @@ class Document:
         )
         
         self.counetrparty_table_style = TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, -1), 'DejaVuSerif'),
-            ('FONTNAME', (0, 0), (0, -1), 'DejaVuSerif'),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
         ])
-
+        
 
         self.invoice_table_style = TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -66,6 +69,14 @@ class Document:
             ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
             ('LINEBELOW', (0, -1), (-1, -1), 1, colors.black),
         ])
+
+        self.counterparty_header_style = TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'DejaVuSerif-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0.2),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ])
+
         # Стили ----------------------------
 
     def build_doc(self):
@@ -84,15 +95,41 @@ class Document:
         self.story.append(table)
         self.add_space(1)
     
-    def create_counterparty_table(self, info):
-        table = Table(info, colWidths=[3*cm, 6*cm])
+    def create_counterparty_tables(self, seller_info, buyer_info):
+        left = seller_info
+        right = buyer_info
+
+        max_rows = max(len(left), len(right))
+        while len(left) < max_rows:
+            left.append(['', ''])
+        while len(right) < max_rows:
+            right.append(['', ''])
+
+        combined_data = []
+        for l, r in zip(left, right):
+            combined_data.append([
+                ' '.join(l), 
+                ' '.join(r)              
+                ])
+
+        # Заголовки над контрагентами
+        header_table = Table([['Продавец', 'Покупатель']], colWidths=[7*cm, 7*cm])
+        header_table.setStyle(self.counterparty_header_style)
+
+        self.story.append(header_table)
+        
+        # Сами контрагенты
+        table = Table(combined_data, colWidths=[7*cm, 7*cm])
         table.setStyle(self.counetrparty_table_style)
+
         self.story.append(table)
         self.add_space(1)
 
 
 
 if __name__ == "__main__":
+    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
     seller = models.Counterparty(       
         name='ООО "Ромашка"',
         inn="1234567890",
@@ -128,8 +165,7 @@ if __name__ == "__main__":
     doc.add_paragraph(f'СЧЁТ НА ОПЛАТУ № {invoice.invoice_number}', doc.title_style)
     doc.add_space(0.5)
 
-    doc.create_counterparty_table(seller.to_table_rows())
-    doc.create_counterparty_table(buyer.to_table_rows())
+    doc.create_counterparty_tables(seller.to_table_rows(), buyer.to_table_rows())
 
     doc.create_invoice_table(invoice.get_items_table())
 
