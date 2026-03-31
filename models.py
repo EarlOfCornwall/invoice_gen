@@ -59,10 +59,10 @@ class Invoice:
         """
         header = ["№", "Наименование", "Кол-во", "Цена", "Сумма"]
         rows = [header]
-        
+
         for i, item in enumerate(self.items, 1):
             rows.append(item.to_row())
-        
+
         # Итоги
         if self.subtotal:
             rows.append(["", "", "", "Итого:", self.subtotal])
@@ -70,9 +70,8 @@ class Invoice:
             rows.append(["", "", "", "НДС:", self.vat])
         if self.grand_total:
             rows.append(["", "", "", "К оплате:", self.grand_total])
-        
-        return rows
 
+        return rows
 
 
 if __name__ == "__main__":
@@ -82,13 +81,13 @@ if __name__ == "__main__":
         inn="1234567890",
         account="40702810000000000000",
         bank="ПАО Сбербанк",
-        bik="044525225"
+        bik="044525225",
     )
 
     buyer = Counterparty(
         name="ИП Иванов И.И.",
         inn="987654321012",
-        address="г. Москва, ул. Примерная, д. 1"
+        address="г. Москва, ул. Примерная, д. 1",
     )
 
     items = [
@@ -104,7 +103,7 @@ if __name__ == "__main__":
         items=items,
         subtotal="65 000",
         vat="Без НДС",
-        grand_total="65 000 руб."
+        grand_total="65 000 руб.",
     )
 
     print("Продавец:", invoice.seller.to_table_rows())
